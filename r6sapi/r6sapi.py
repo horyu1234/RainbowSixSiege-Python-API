@@ -8,12 +8,13 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import aiohttp
 import asyncio
-import time
-import json
 import base64
+import json
+import time
 from urllib import parse
+
+import aiohttp
 
 
 class InvalidRequest(Exception):
@@ -63,13 +64,11 @@ class Platforms:
 
 valid_platforms = [x.lower() for x in dir(Platforms) if "_" not in x]
 
-
 PlatformURLNames = {
     "uplay": "OSBOR_PC_LNCH_A",
     "psn": "OSBOR_PS4_LNCH_A",
     "xbl": "OSBOR_XBOXONE_LNCH_A"
 }
-
 
 #  DEPRECATED - this dict is no longer updated with new OPs (sorry)
 OperatorProfiles = {
@@ -103,7 +102,6 @@ OperatorProfiles = {
     "CAVEIRA": "https://ubistatic-a.akamaihd.net/0058/prod/assets/images/large-caveira.e4d82365.png",
     "DEFAULT": "https://ubistatic-a.akamaihd.net/0058/prod/assets/styles/images/mask-large-bandit.fc038cf1.png"
 }
-
 
 #  DEPRECATED - use Auth.get_operator_badge() instead
 OperatorIcons = {
@@ -146,7 +144,6 @@ OperatorIcons = {
     "ZOFIA": "https://ubistatic19-a.akamaihd.net/resource/en-gb/game/rainbow6/siege/zofia_badge_306416.png"
 }
 
-
 #  DEPRECATED - use Auth.get_operator_statistic() instead
 OperatorStatistics = {
     "DOC": "teammaterevive",
@@ -186,7 +183,6 @@ OperatorStatistics = {
     "VIGIL": "diminishedrealitymode",
     "ZOFIA": "concussiongrenade_detonate"
 }
-
 
 OperatorStatisticNames = {
     "DOC": "Teammates Revived",
@@ -269,7 +265,6 @@ WeaponNames = [
     "Light Machine Gun",
     "Machine Pistol"
 ]
-
 
 GamemodeNames = {
     "securearea": "Secure Area",
@@ -354,7 +349,7 @@ class Auth:
         self.genome = ""
 
         self.cachetime = cachetime
-        self.cache={}
+        self.cache = {}
 
         self._definitions = None
         self._op_definitions = None
@@ -368,7 +363,7 @@ class Auth:
         if time.time() < self._login_cooldown:
             raise FailedToConnect("login on cooldown")
 
-        resp = yield from self.session.post("https://connect.ubi.com/ubiservices/v2/profiles/sessions", headers = {
+        resp = yield from self.session.post("https://connect.ubi.com/ubiservices/v2/profiles/sessions", headers={
             "Content-Type": "application/json",
             "Ubi-AppId": self.appid,
             "Authorization": "Basic " + self.token
@@ -421,7 +416,8 @@ class Auth:
                 else:
                     message = text
 
-                raise InvalidRequest("Received a text response, expected JSON response. Message: %s" % message, code=code)
+                raise InvalidRequest("Received a text response, expected JSON response. Message: %s" % message,
+                                     code=code)
 
             if "httpCode" in data:
                 if data["httpCode"] == 401:
@@ -430,7 +426,7 @@ class Auth:
                         self._login_cooldown = time.time() + 60
                         raise FailedToConnect
                     yield from self.connect()
-                    result = yield from self.get(*args, retries=retries+1, **kwargs)
+                    result = yield from self.get(*args, retries=retries + 1, **kwargs)
                     return result
                 else:
                     msg = data.get("message", "")
@@ -487,9 +483,12 @@ class Auth:
                 return self.cache[platform][cache_key][1]
 
         if name:
-            data = yield from self.get("https://public-ubiservices.ubi.com/v2/profiles?nameOnPlatform=%s&platformType=%s" % (parse.quote(name), parse.quote(platform)))
+            data = yield from self.get(
+                "https://public-ubiservices.ubi.com/v2/profiles?nameOnPlatform=%s&platformType=%s" % (
+                    parse.quote(name), parse.quote(platform)))
         else:
-            data = yield from self.get("https://public-ubiservices.ubi.com/v2/users/%s/profiles?platformType=%s" % (uid, parse.quote(platform)))
+            data = yield from self.get("https://public-ubiservices.ubi.com/v2/users/%s/profiles?platformType=%s" % (
+                uid, parse.quote(platform)))
 
         if "profiles" in data:
             results = [Player(self, x) for x in data["profiles"] if x.get("platformType", "") == platform]
@@ -537,7 +536,8 @@ class Auth:
         if self._op_definitions is not None:
             return self._op_definitions
 
-        resp = yield from self.session.get("https://ubistatic-a.akamaihd.net/0058/prod/assets/data/operators.3a2655c8.json")
+        resp = yield from self.session.get(
+            "https://ubistatic-a.akamaihd.net/0058/prod/assets/data/operators.3a2655c8.json")
 
         data = yield from resp.json()
         self._op_definitions = data
@@ -597,7 +597,6 @@ class Auth:
 
         return opdefs[name]["badge"]
 
-
     @asyncio.coroutine
     def get_definitions(self):
         """|coro|
@@ -612,7 +611,8 @@ class Auth:
         if self._definitions is not None:
             return self._definitions
 
-        resp = yield from self.session.get("https://ubistatic-a.akamaihd.net/0058/prod/assets/data/statistics.definitions.eb165e13.json")
+        resp = yield from self.session.get(
+            "https://ubistatic-a.akamaihd.net/0058/prod/assets/data/statistics.definitions.eb165e13.json")
 
         data = yield from resp.json()
         self._definitions = data
@@ -690,10 +690,10 @@ class Rank:
         the standard deviation for this persons skill
     """
     RANKS = ["Unranked",
-             "Copper 4",   "Copper 3",   "Copper 2",   "Copper 1",
-             "Bronze 4",   "Bronze 3",   "Bronze 2",   "Bronze 1",
-             "Silver 4",   "Silver 3",   "Silver 2",   "Silver 1",
-             "Gold 4",     "Gold 3",     "Gold 2",     "Gold 1",
+             "Copper 4", "Copper 3", "Copper 2", "Copper 1",
+             "Bronze 4", "Bronze 3", "Bronze 2", "Bronze 1",
+             "Silver 4", "Silver 3", "Silver 2", "Silver 1",
+             "Gold 4", "Gold 3", "Gold 2", "Gold 1",
              "Platinum 3", "Platinum 2", "Platinum 1", "Diamond"]
 
     RANK_CHARMS = [
@@ -726,29 +726,42 @@ class Rank:
         "https://i.imgur.com/Sv3PQQE.jpg",  # plat 3
         "https://i.imgur.com/Uq3WhzZ.jpg",  # plat 2
         "https://i.imgur.com/xx03Pc5.jpg",  # plat 1
-        "https://i.imgur.com/nODE0QI.jpg"   # diamond
+        "https://i.imgur.com/nODE0QI.jpg"  # diamond
     ]
 
     @staticmethod
     def bracket_from_rank(rank_id):
-        if rank_id == 0: return 0
-        elif rank_id <= 4: return 1
-        elif rank_id <= 8: return 2
-        elif rank_id <= 12: return 3
-        elif rank_id <= 16: return 4
-        elif rank_id <= 19: return 5
-        else: return 6
+        if rank_id == 0:
+            return 0
+        elif rank_id <= 4:
+            return 1
+        elif rank_id <= 8:
+            return 2
+        elif rank_id <= 12:
+            return 3
+        elif rank_id <= 16:
+            return 4
+        elif rank_id <= 19:
+            return 5
+        else:
+            return 6
 
     @staticmethod
     def bracket_name(bracket):
-        if bracket == 0: return "Unranked"
-        elif bracket == 1: return "Copper"
-        elif bracket == 2: return "Bronze"
-        elif bracket == 3: return "Silver"
-        elif bracket == 4: return "Gold"
-        elif bracket == 5: return "Platinum"
-        else: return "Diamond"
-
+        if bracket == 0:
+            return "Unranked"
+        elif bracket == 1:
+            return "Copper"
+        elif bracket == 2:
+            return "Bronze"
+        elif bracket == 3:
+            return "Silver"
+        elif bracket == 4:
+            return "Gold"
+        elif bracket == 5:
+            return "Platinum"
+        else:
+            return "Diamond"
 
     UNRANKED = 0
     COPPER = 1
@@ -839,6 +852,7 @@ class Operator:
         the value for this operators unique statistic
     statistic_name : str
         the human-friendly name for this operators statistic"""
+
     def __init__(self, name, data):
         self.name = name.lower()
 
@@ -879,6 +893,7 @@ class Weapon:
         the number of bullets this player has shot with this weapon
 
     """
+
     def __init__(self, type):
         self.type = type
         self.name = WeaponNames[self.type]
@@ -906,6 +921,7 @@ class Gamemode:
         the number of games this player has played on this gamemode
     best_score : int
         the best score this player has achieved on this gamemode"""
+
     def __init__(self, type):
         self.type = type
         self.name = GamemodeNames[self.type]
@@ -935,6 +951,7 @@ class GameQueue:
         the number of kills the player has on this gamemode
     deaths : int
         the number of deaths the player has on this gamemode"""
+
     def __init__(self, name):
         self.name = name
 
@@ -1051,7 +1068,9 @@ class Player:
 
     @asyncio.coroutine
     def _fetch_statistics(self, *statsitics):
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=%s" % (self.spaceid, self.platform_url, self.id, ",".join(statsitics)))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=%s" % (
+                self.spaceid, self.platform_url, self.id, ",".join(statsitics)))
 
         if not "results" in data or not self.id in data["results"]:
             raise InvalidRequest("Missing results key in returned JSON object %s" % str(data))
@@ -1071,7 +1090,9 @@ class Player:
         """|coro|
 
         Load the players XP and level"""
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/r6playerprofile/playerprofile/progressions?profile_ids=%s" % (self.spaceid, self.platform_url, self.id))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/r6playerprofile/playerprofile/progressions?profile_ids=%s" % (
+                self.spaceid, self.platform_url, self.id))
 
         if "player_profiles" in data and len(data["player_profiles"]) > 0:
             self.xp = data["player_profiles"][0].get("xp", 0)
@@ -1103,7 +1124,9 @@ class Player:
         -------
         :class:`Rank`
             the players rank for this region and season"""
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/r6karma/players?board_id=pvp_ranked&profile_ids=%s&region_id=%s&season_id=%s" % (self.spaceid, self.platform_url, self.id, region, season))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/r6karma/players?board_id=pvp_ranked&profile_ids=%s&region_id=%s&season_id=%s" % (
+                self.spaceid, self.platform_url, self.id, region, season))
 
         if "players" in data and self.id in data["players"]:
             regionkey = "%s:%s" % (region, season)
@@ -1147,10 +1170,14 @@ class Player:
         dict[:class:`Operator`]
             the dictionary of all operators found"""
         statistics = "operatorpvp_kills,operatorpvp_death,operatorpvp_roundwon,operatorpvp_roundlost,operatorpvp_meleekills,operatorpvp_totalxp,operatorpvp_headshot,operatorpvp_timeplayed,operatorpvp_dbno"
-        specifics = ",".join("operatorpvp_" + (name.lower() + "_" if name != "JACKAL" and name != "MIRA" else "") + OperatorStatistics[name] for name in OperatorStatistics)
+        specifics = ",".join(
+            "operatorpvp_" + (name.lower() + "_" if name != "JACKAL" and name != "MIRA" else "") + OperatorStatistics[
+                name] for name in OperatorStatistics)
         statistics += "," + specifics
 
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=%s" % (self.spaceid, self.platform_url, self.id, statistics))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=%s" % (
+                self.spaceid, self.platform_url, self.id, statistics))
 
         if not "results" in data or not self.id in data["results"]:
             raise InvalidRequest("Missing results key in returned JSON object %s" % str(data))
@@ -1209,7 +1236,9 @@ class Player:
         else:
             operator_key = ""
 
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=operatorpvp_kills,operatorpvp_death,operatorpvp_roundwon,operatorpvp_roundlost,operatorpvp_meleekills,operatorpvp_totalxp,operatorpvp_headshot,operatorpvp_timeplayed,operatorpvp_dbno%s" % (self.spaceid, self.platform_url, self.id, operator_key))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=operatorpvp_kills,operatorpvp_death,operatorpvp_roundwon,operatorpvp_roundlost,operatorpvp_meleekills,operatorpvp_totalxp,operatorpvp_headshot,operatorpvp_timeplayed,operatorpvp_dbno%s" % (
+                self.spaceid, self.platform_url, self.id, operator_key))
 
         if not "results" in data or not self.id in data["results"]:
             raise InvalidRequest("Missing results key in returned JSON object %s" % str(data))
@@ -1219,7 +1248,7 @@ class Player:
         data = {x.split(":")[0].split("_")[1]: data[x] for x in data if x is not None and location in x}
         data["__statistic_name"] = operator_key.split("_")[1]
 
-        #if len(data) < 5:
+        # if len(data) < 5:
         #    raise InvalidRequest("invalid number of results for operator in JSON object %s" % data)
 
         oper = Operator(operator, data)
@@ -1257,7 +1286,9 @@ class Player:
         -------
         list[:class:`Weapon`]
             list of all the weapon objects found"""
-        data = yield from self.auth.get("https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=weapontypepvp_kills,weapontypepvp_headshot,weapontypepvp_bulletfired,weapontypepvp_bullethit" % (self.spaceid, self.platform_url, self.id))
+        data = yield from self.auth.get(
+            "https://public-ubiservices.ubi.com/v1/spaces/%s/sandboxes/%s/playerstats2/statistics?populations=%s&statistics=weapontypepvp_kills,weapontypepvp_headshot,weapontypepvp_bulletfired,weapontypepvp_bullethit" % (
+                self.spaceid, self.platform_url, self.id))
 
         if not "results" in data or not self.id in data["results"]:
             raise InvalidRequest("Missing key results in returned JSON object %s" % str(data))
@@ -1271,10 +1302,14 @@ class Player:
             try:
                 weapontype = int(spl[1]) - 1
                 weapon = self.weapons[weapontype]
-                if category == "kills": weapon.kills = data[x]
-                elif category == "headshot": weapon.headshots = data[x]
-                elif category == "bulletfired": weapon.shots = data[x]
-                elif category == "bullethit": weapon.hits = data[x]
+                if category == "kills":
+                    weapon.kills = data[x]
+                elif category == "headshot":
+                    weapon.headshots = data[x]
+                elif category == "bulletfired":
+                    weapon.shots = data[x]
+                elif category == "bullethit":
+                    weapon.hits = data[x]
             except (ValueError, TypeError, IndexError):
                 pass
 
@@ -1305,11 +1340,16 @@ class Player:
         dict
             dict of all the gamemodes found (gamemode_name: :class:`Gamemode`)"""
 
-        stats = yield from self._fetch_statistics("secureareapvp_matchwon", "secureareapvp_matchlost", "secureareapvp_matchplayed",
-                                                  "secureareapvp_bestscore", "rescuehostagepvp_matchwon", "rescuehostagepvp_matchlost",
-                                                  "rescuehostagepvp_matchplayed", "rescuehostagepvp_bestscore", "plantbombpvp_matchwon",
-                                                  "plantbombpvp_matchlost", "plantbombpvp_matchplayed", "plantbombpvp_bestscore",
-                                                  "generalpvp_servershacked", "generalpvp_serverdefender", "generalpvp_serveraggression",
+        stats = yield from self._fetch_statistics("secureareapvp_matchwon", "secureareapvp_matchlost",
+                                                  "secureareapvp_matchplayed",
+                                                  "secureareapvp_bestscore", "rescuehostagepvp_matchwon",
+                                                  "rescuehostagepvp_matchlost",
+                                                  "rescuehostagepvp_matchplayed", "rescuehostagepvp_bestscore",
+                                                  "plantbombpvp_matchwon",
+                                                  "plantbombpvp_matchlost", "plantbombpvp_matchplayed",
+                                                  "plantbombpvp_bestscore",
+                                                  "generalpvp_servershacked", "generalpvp_serverdefender",
+                                                  "generalpvp_serveraggression",
                                                   "generalpvp_hostagerescue", "generalpvp_hostagedefense")
 
         self.gamemodes = {x: Gamemode(x) for x in GamemodeNames}
@@ -1328,8 +1368,6 @@ class Player:
             elif name == "rescuehostage":
                 gamemode.hostages_rescued = stats.get("generalpvp_hostagerescue", 0)
                 gamemode.hostages_defended = stats.get("generalpvp_hostagedefense", 0)
-
-
 
         return self.gamemodes
 
@@ -1353,14 +1391,21 @@ class Player:
 
         Loads the players general stats"""
 
-        stats = yield from self._fetch_statistics("generalpvp_timeplayed", "generalpvp_matchplayed", "generalpvp_matchwon",
+        stats = yield from self._fetch_statistics("generalpvp_timeplayed", "generalpvp_matchplayed",
+                                                  "generalpvp_matchwon",
                                                   "generalpvp_matchlost", "generalpvp_kills", "generalpvp_death",
-                                                  "generalpvp_bullethit", "generalpvp_bulletfired", "generalpvp_killassists",
-                                                  "generalpvp_revive", "generalpvp_headshot", "generalpvp_penetrationkills",
-                                                  "generalpvp_meleekills", "generalpvp_dbnoassists", "generalpvp_suicide",
-                                                  "generalpvp_barricadedeployed", "generalpvp_reinforcementdeploy", "generalpvp_totalxp",
-                                                  "generalpvp_rappelbreach", "generalpvp_distancetravelled", "generalpvp_revivedenied",
-                                                  "generalpvp_dbno", "generalpvp_gadgetdestroy", "generalpvp_blindkills")
+                                                  "generalpvp_bullethit", "generalpvp_bulletfired",
+                                                  "generalpvp_killassists",
+                                                  "generalpvp_revive", "generalpvp_headshot",
+                                                  "generalpvp_penetrationkills",
+                                                  "generalpvp_meleekills", "generalpvp_dbnoassists",
+                                                  "generalpvp_suicide",
+                                                  "generalpvp_barricadedeployed", "generalpvp_reinforcementdeploy",
+                                                  "generalpvp_totalxp",
+                                                  "generalpvp_rappelbreach", "generalpvp_distancetravelled",
+                                                  "generalpvp_revivedenied",
+                                                  "generalpvp_dbno", "generalpvp_gadgetdestroy",
+                                                  "generalpvp_blindkills")
 
         statname = "generalpvp_"
         self.deaths = stats.get(statname + "death", 0)
@@ -1387,7 +1432,6 @@ class Player:
         self.dbnos = stats.get(statname + "dbno", 0)
         self.gadgets_destroyed = stats.get(statname + "gadgetdestroy", 0)
         self.blind_kills = stats.get(statname + "blindkills")
-
 
     @asyncio.coroutine
     def check_general(self):
@@ -1421,7 +1465,6 @@ class Player:
             gq.kills = stats.get(statname + "kills", 0)
             gq.deaths = stats.get(statname + "death", 0)
 
-
     @asyncio.coroutine
     def check_queues(self):
         """|coro|
@@ -1436,14 +1479,22 @@ class Player:
 
         Loads the player's general stats for terrorist hunt"""
         stats = yield from self._fetch_statistics("generalpve_dbnoassists", "generalpve_death", "generalpve_revive",
-                                                  "generalpve_matchwon", "generalpve_suicide", "generalpve_servershacked",
-                                                  "generalpve_serverdefender", "generalpve_barricadedeployed", "generalpve_reinforcementdeploy",
-                                                  "generalpve_kills", "generalpve_hostagedefense", "generalpve_bulletfired",
-                                                  "generalpve_matchlost", "generalpve_killassists", "generalpve_totalxp",
-                                                  "generalpve_hostagerescue", "generalpve_penetrationkills", "generalpve_meleekills",
-                                                  "generalpve_rappelbreach", "generalpve_distancetravelled", "generalpve_matchplayed",
-                                                  "generalpve_serveraggression", "generalpve_timeplayed", "generalpve_revivedenied",
-                                                  "generalpve_dbno", "generalpve_bullethit", "generalpve_blindkills", "generalpve_headshot",
+                                                  "generalpve_matchwon", "generalpve_suicide",
+                                                  "generalpve_servershacked",
+                                                  "generalpve_serverdefender", "generalpve_barricadedeployed",
+                                                  "generalpve_reinforcementdeploy",
+                                                  "generalpve_kills", "generalpve_hostagedefense",
+                                                  "generalpve_bulletfired",
+                                                  "generalpve_matchlost", "generalpve_killassists",
+                                                  "generalpve_totalxp",
+                                                  "generalpve_hostagerescue", "generalpve_penetrationkills",
+                                                  "generalpve_meleekills",
+                                                  "generalpve_rappelbreach", "generalpve_distancetravelled",
+                                                  "generalpve_matchplayed",
+                                                  "generalpve_serveraggression", "generalpve_timeplayed",
+                                                  "generalpve_revivedenied",
+                                                  "generalpve_dbno", "generalpve_bullethit", "generalpve_blindkills",
+                                                  "generalpve_headshot",
                                                   "generalpve_gadgetdestroy", "generalpve_accuracy")
 
         self.terrorist_hunt = GameQueue("terrohunt")
@@ -1489,4 +1540,3 @@ class Player:
         if self.terrorist_hunt is None:
             yield from self.load_terrohunt()
         return self.terrorist_hunt
-

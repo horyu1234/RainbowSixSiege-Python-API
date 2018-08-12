@@ -7,4 +7,3 @@ __copyright__ = 'Copyright 2016-2018 billyoyo'
 __version__ = '0.7.0'
 
 from .r6sapi import *
-
